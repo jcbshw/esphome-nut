@@ -8,6 +8,13 @@ from esphome.const import (
 )
 
 DEPENDENCIES = ["esp32"]
+
+# control_button.cpp and control_number.cpp are compiled unconditionally, so the
+# button and number core components must be present even when a config uses
+# neither platform - otherwise the build fails on missing
+# esphome/components/{button,number}/*.h.
+AUTO_LOAD = ["binary_sensor", "sensor", "text_sensor", "button", "number"]
+
 MULTI_CONF = True
 
 CONF_SIMULATION_MODE = "simulation_mode"

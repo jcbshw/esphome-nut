@@ -2,7 +2,10 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor
 from esphome.const import (
+    CONF_ACCURACY_DECIMALS,
+    CONF_DEVICE_CLASS,
     CONF_TYPE,
+    CONF_UNIT_OF_MEASUREMENT,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_VOLTAGE,
     DEVICE_CLASS_POWER_FACTOR,
@@ -145,24 +148,27 @@ CONFIG_SCHEMA = sensor.sensor_schema(
 
 
 async def to_code(config):
+    sensor_type = config[CONF_TYPE]
+
+    # Fill in the per-type defaults *before* the entity is created. ESPHome
+    # bakes these into App.register_sensor() and no longer exposes a
+    # set_device_class() setter on the C++ side, so applying them afterwards
+    # fails to compile.
+    if sensor_type in SENSOR_TYPES:
+        sensor_config = SENSOR_TYPES[sensor_type]
+
+        if CONF_UNIT_OF_MEASUREMENT not in config and "unit" in sensor_config:
+            config[CONF_UNIT_OF_MEASUREMENT] = sensor_config["unit"]
+
+        if CONF_DEVICE_CLASS not in config and "device_class" in sensor_config:
+            config[CONF_DEVICE_CLASS] = sensor_config["device_class"]
+
+        if CONF_ACCURACY_DECIMALS not in config and "accuracy_decimals" in sensor_config:
+            config[CONF_ACCURACY_DECIMALS] = sensor_config["accuracy_decimals"]
+
     parent = await cg.get_variable(config[CONF_UPS_HID_ID])
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
 
-    sensor_type = config[CONF_TYPE]
     cg.add(var.set_sensor_type(sensor_type))
     cg.add(parent.register_sensor(var, sensor_type))
-
-    # Apply sensor type specific configuration
-    if sensor_type in SENSOR_TYPES:
-        sensor_config = SENSOR_TYPES[sensor_type]
-
-        # Override config with sensor type defaults if not specified
-        if "unit_of_measurement" not in config and "unit" in sensor_config:
-            cg.add(var.set_unit_of_measurement(sensor_config["unit"]))
-
-        if "device_class" not in config and "device_class" in sensor_config:
-            cg.add(var.set_device_class(sensor_config["device_class"]))
-
-        if "accuracy_decimals" not in config and "accuracy_decimals" in sensor_config:
-            cg.add(var.set_accuracy_decimals(sensor_config["accuracy_decimals"]))

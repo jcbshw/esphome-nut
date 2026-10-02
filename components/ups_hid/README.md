@@ -200,6 +200,18 @@ logger:
 - Check if your UPS model is supported (see device compatibility table)
 - Enable debug logging: `logger: level: DEBUG`
 - Try manual protocol: `protocol: generic`
+- Check how many protocols were actually linked into the firmware. On the
+  first detection attempt the factory logs:
+
+  ```
+  [I][ups_hid.factory]: Protocol registry: 2 vendor-specific, 1 fallback
+  ```
+
+  If that reports `0 vendor-specific, 0 fallback`, no protocol
+  implementation is present in the binary and no device can ever be
+  detected — the symptom is `Trying 0 fallback protocols` followed by
+  `No suitable protocol found`. See *Adding New Protocols* in
+  `CONTRIBUTING.md` for why a protocol can be compiled but not linked.
 
 #### 3. USB communication errors
 - Increase timeout: `protocol_timeout: 15s`

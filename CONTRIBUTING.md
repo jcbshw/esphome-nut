@@ -96,9 +96,15 @@ If you prefer manual collection, the issue template provides detailed instructio
 
 1. **Study existing protocols**: Review `apc_hid_protocol.cpp` or `cyberpower_protocol.cpp`
 2. **Use the protocol base class**: Inherit from `UpsProtocolBase`
-3. **Register your protocol**: Use the `REGISTER_UPS_PROTOCOL_FOR_VENDOR` macro
-4. **Follow patterns**: Match existing code style and error handling
-5. **Add constants properly**: Use `ups_constants.h` for shared values
+3. **Register your protocol**: Use the `REGISTER_UPS_PROTOCOL_FOR_VENDOR` macro **and** add your creator function to `ProtocolFactory::register_builtin_protocols()` in `protocol_factory.cpp`.
+
+   The macro on its own is not enough. It registers from a static object in an anonymous namespace, and ESPHome compiles its sources into a static library — the linker only pulls an object file out of an archive when it resolves an undefined symbol. If nothing outside your protocol's `.cpp` references it, the whole object file is discarded and your registrar never runs. The protocol compiles cleanly, is absent from the firmware, and every device falls through to "No suitable protocol found".
+
+   Referencing your creator from `register_builtin_protocols()` is what forces the translation unit to be linked. Registration is deduplicated by name, so the macro and the explicit call coexist safely.
+
+4. **Never log during registration**: registration runs during static initialization, before `App.setup()` constructs the Logger. `esp_log_printf_()` only null-checks `logger::global_logger` under `ESPHOME_DEBUG`, so an `ESP_LOG*` call on that path dereferences null and resets the device. Log from `detect()` or later instead.
+5. **Follow patterns**: Match existing code style and error handling
+6. **Add constants properly**: Use `ups_constants.h` for shared values
 
 ### Code Quality Standards
 

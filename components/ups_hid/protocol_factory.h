@@ -84,6 +84,21 @@ private:
     
     // Ensure registries are initialized
     static void ensure_initialized();
+
+    // Explicitly register the protocols shipped with this component.
+    //
+    // The REGISTER_UPS_* macros below rely on a static object in an anonymous
+    // namespace to self-register at startup. That does not survive linking:
+    // ESPHome compiles its sources into a static library, and the linker only
+    // pulls an object file out of an archive when it resolves an undefined
+    // symbol. Nothing outside protocol_{cyberpower,apc,generic}.cpp references
+    // them, so those object files are dropped and their registrars never run,
+    // leaving both registries empty at runtime.
+    //
+    // Referencing the creator functions from here - in a file that IS linked -
+    // forces those object files in, which both registers the protocols and
+    // brings the macro registrars along with them (deduplicated on name).
+    static void register_builtin_protocols();
 };
 
 /**

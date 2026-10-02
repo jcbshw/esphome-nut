@@ -61,9 +61,6 @@ external_components:
       type: local
       path: ../../components
 
-# Enable number component for delay configuration
-number:
-
 # Main UPS HID Component
 ups_hid:
   id: ups_monitor
